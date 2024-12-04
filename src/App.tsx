@@ -102,63 +102,34 @@ const App = () => {
     setUploading(true);
     setProgress(0);
 
-    const totalFiles = files.length;
-    const uploadedFiles = [];
-
     try {
-      let uploadedCount = 0;
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+      formData.append("unitId", selectedUnit.id_condominio_cond);
+      formData.append("unitName", selectedUnit.st_nome_cond);
 
-      for (const file of files) {
-        const singleFileData = new FormData();
-        singleFileData.append("file", file);
-        singleFileData.append("unitId", selectedUnit.id_condominio_cond);
-        singleFileData.append("unitName", selectedUnit.st_nome_cond);
-
-        // Log para verificar o FormData
-        for (let pair of singleFileData.entries()) {
-          console.log(pair[0] + ", " + pair[1]);
-        }
-
-        const response = await axios.post(
-          "https://pssg0c4sows.indexadm.com.br/upload",
-          singleFileData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-            onUploadProgress: (event) => {
-              const fileProgress = Math.round(
-                (uploadedCount / totalFiles) * 100
-              );
-              if (event.total) {
-                setProgress(
-                  fileProgress +
-                    Math.round((event.loaded / event.total) * 100) /
-                      totalFiles
-                );
-              }
-            },
-          }
-        );
-
-        uploadedCount++;
-        setProgress(Math.round((uploadedCount / totalFiles) * 100));
-
-        const fileName = response.data.name;
-        const fileLink = response.data.webViewLink;
-        uploadedFiles.push({ name: fileName, link: fileLink });
-      }
-
-      await axios.post(
-        "https://automacao.indexadm.com.br/webhook-test/d41d8cd98f045b204e9835998ecf8427e",
+      const response = await axios.post(
+        "https://pssg0c4sows.indexadm.com.br/upload",
+        // "http://localhost:1323/upload",
+        formData,
         {
-          message: "Upload concluído com sucesso",
-          files: uploadedFiles,
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (event) => {
+            if (event.total) {
+              setProgress(Math.round((event.loaded / event.total) * 100));
+            }
+          },
         }
       );
+
+      console.log("Upload concluído:", response.data);
 
       setShowSuccess(true);
       setFiles([]);
     } catch (error) {
-      console.error("Error uploading files:", error);
+      console.error("Erro ao enviar arquivos:", error);
       alert("Falha ao enviar os arquivos");
     } finally {
       setUploading(false);
@@ -173,7 +144,6 @@ const App = () => {
     setShowSuccess(false);
   };
 
-  // Custom filter function for Select component
   const filterOption = (
     option: { label: string; value: string; data: OptionType },
     inputValue: string
